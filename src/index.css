@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens. Light palette is the default; dark overrides the same names. */
+:root {
+  color-scheme: light;
+  --bg: #eeefea;
+  --surface: #ffffff;
+  --surface-2: #f4f5f0;
+  --surface-3: #e8e9e3;
+  --line: #e2e3dc;
+  --line-strong: #cfd0c8;
+  --ink: #111210;
+  --ink-2: #474943;
+  --ink-3: #82847c;
+  --accent: #c8ec2c;
+  --accent-ink: #111210;
+  --accent-soft: #eef8c8;
+  --accent-text: #587000;
+  --accent-glow: rgb(200 236 44 / 0.35);
+  --good: #16865b;
+  --good-soft: #e3f4ec;
+  --warn: #b86e00;
+  --warn-soft: #fbf0dc;
+  --bad: #d23c3c;
+  --bad-soft: #fbe6e5;
+  --card-grad: linear-gradient(180deg, #ffffff 0%, #fbfbf8 100%);
+  --shadow: 0 1px 2px rgb(17 18 16 / 0.04), 0 10px 30px -18px rgb(17 18 16 / 0.18);
+  --shadow-lg: 0 24px 64px -24px rgb(17 18 16 / 0.35);
+}
+.dark {
+  color-scheme: dark;
+  --bg: #050505;
+  --surface: #121212;
+  --surface-2: #1a1a1a;
+  --surface-3: #242424;
+  --line: #222222;
+  --line-strong: #323232;
+  --ink: #f4f4f1;
+  --ink-2: #b7b7b2;
+  --ink-3: #7d7d78;
+  --accent: #d4f53c;
+  --accent-ink: #0b0b0a;
+  --accent-soft: #2a3108;
+  --accent-text: #d4f53c;
+  --accent-glow: rgb(212 245 60 / 0.28);
+  --good: #3cc58c;
+  --good-soft: #10291f;
+  --warn: #f0a93b;
+  --warn-soft: #2d2212;
+  --bad: #f06b6b;
+  --bad-soft: #321718;
+  --card-grad: radial-gradient(120% 90% at 50% 0%, #1b1b1b 0%, #121212 55%, #0e0e0e 100%);
+  --shadow: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 12px 32px -16px rgb(0 0 0 / 0.8);
+  --shadow-lg: 0 24px 64px -16px rgb(0 0 0 / 0.8);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-text: var(--accent-text);
+  --color-accent-glow: var(--accent-glow);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --font-display: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --shadow-card: var(--shadow);
+  --shadow-pop: var(--shadow-lg);
+}
+
+html, body, #root { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+h1, h2, h3 { text-wrap: balance; }
+.tnum { font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; color: var(--ink-3); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offset: 0; outline-width: 1px; }
+::selection { background: var(--accent-soft); }
+
+.scroll-thin { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+
+@keyframes pop-in { from { opacity: 0; transform: translateY(6px) scale(0.985); } to { opacity: 1; transform: none; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.anim-pop { animation: pop-in 180ms cubic-bezier(.2,.8,.2,1); }
+.anim-fade { animation: fade-in 160ms ease-out; }
+.anim-slide { animation: slide-in 220ms cubic-bezier(.2,.8,.2,1); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+}
+
+@layer components {
+  .card { background: var(--card-grad); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); }
+  .hatch { background-image: repeating-linear-gradient(135deg, var(--line-strong) 0 1px, transparent 1px 6px); }
+}
