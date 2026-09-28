@@ -54,7 +54,14 @@ function SignIn() {
       }
     } catch (e) {
       const text = e instanceof Error ? e.message : ''
-      setMsg({ tone: 'bad', text: /fetch|network/i.test(text) ? 'Can’t reach the server. Check your internet connection and try again.' : text || 'Sign-in failed. Check your details and try again.' })
+      setMsg({
+        tone: 'bad',
+        text: /fetch|network/i.test(text)
+          ? 'Can’t reach the server. Check your internet connection and try again.'
+          : /rate limit/i.test(text)
+            ? 'Too many emails were sent in the last hour. Ask the studio owner to turn off email confirmation in Supabase, or try again later.'
+            : text || 'Sign-in failed. Check your details and try again.',
+      })
     } finally {
       setBusy(false)
     }

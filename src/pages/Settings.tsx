@@ -302,7 +302,6 @@ function Team() {
                 setDraft({ name: '', email: '', title: '', role: 'Designer', location: '' })
                 if (cloudEnabled) {
                   setShare({ name: invited, email })
-                  sendInviteEmail(email).catch(() => {})
                 } else notify(`${invited} added to the team`)
               }}
             >
