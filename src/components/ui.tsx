@@ -237,13 +237,16 @@ export function Bar({ value, className, tone = 'accent' }: { value: number; clas
 export function Modal({ open, onClose, title, children, footer, wide }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
   const titleId = useId()
   const ref = useRef<HTMLDivElement>(null)
+  // Callers pass a fresh onClose every render; reading it from a ref keeps the effect (and its autofocus) to open/close only.
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
   useEffect(() => {
     if (!open) return
     const prev = document.activeElement as HTMLElement | null
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
-        onClose()
+        closeRef.current()
       }
     }
     window.addEventListener('keydown', onKey)
@@ -252,7 +255,7 @@ export function Modal({ open, onClose, title, children, footer, wide }: { open: 
       window.removeEventListener('keydown', onKey)
       prev?.focus?.()
     }
-  }, [open, onClose])
+  }, [open])
   if (!open) return null
   return (
     <div className="anim-fade fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-[2px] sm:items-center sm:p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
