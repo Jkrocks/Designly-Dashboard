@@ -126,7 +126,7 @@ function Workflow() {
   const disabled = !can('settings')
   return (
     <Card>
-      <CardHeader title="Workflow statuses" sub="Rename, recolour, reorder or add your own steps. The type tells DesignFlow what a status means, so insights keep working." />
+      <CardHeader title="Workflow statuses" sub="Rename, recolour, reorder or add your own steps. The type tells Designly what a status means, so insights keep working." />
       <ul className="flex flex-col gap-2">
         {s.statuses.map((st, i) => {
           const used = s.projects.filter((p) => p.statusId === st.id).length + s.tasks.filter((t) => t.statusId === st.id).length
@@ -369,7 +369,7 @@ function ShareInvite({ target, onClose }: { target: { name: string; email: strin
       onClose={onClose}
       title={`Invite ${target?.name ?? ''}`}
       intro={<>Send this to {target?.email}. When they open the link and create their account with that email, they join your studio.</>}
-      subject="Join our studio on DesignFlow"
+      subject="Join our studio on Designly"
       body={target ? inviteMessage(target.name, target.email) : ''}
       to={target?.email}
     />

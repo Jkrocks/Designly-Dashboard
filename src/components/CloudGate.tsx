@@ -12,7 +12,7 @@ function Screen({ children }: { children: ReactNode }) {
       <div className="card anim-pop relative w-full max-w-md p-7 sm:p-8">
         <div className="mb-6 flex items-center gap-3">
           <Logo size={40} />
-          <span className="text-lg font-semibold tracking-tight">DesignFlow</span>
+          <span className="text-lg font-semibold tracking-tight">Designly</span>
         </div>
         {children}
       </div>

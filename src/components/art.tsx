@@ -1,3 +1,4 @@
+import logoMark from '../assets/logo-mark.png'
 import { useTheme } from '../lib/theme'
 import { cn } from '../lib/utils'
 
@@ -45,11 +46,5 @@ export function Cover({ hue, shape, className, label }: { hue: number; shape: nu
 }
 
 export function Logo({ size = 36 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 36 36" aria-label="DesignFlow" role="img">
-      <rect width="36" height="36" rx="11" fill="var(--accent)" />
-      <path d="M10 11.5h11.5a5 5 0 0 1 0 10H15" stroke="var(--accent-ink)" strokeWidth="3.2" strokeLinecap="round" fill="none" />
-      <path d="M10 18h6M10 24.5h9" stroke="var(--accent-ink)" strokeWidth="3.2" strokeLinecap="round" />
-    </svg>
-  )
+  return <img src={logoMark} width={size} height={size} alt="Designly" className="shrink-0 select-none" draggable={false} />
 }

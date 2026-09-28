@@ -421,5 +421,5 @@ export function inviteLink(email: string) {
 
 export function inviteMessage(name: string, email: string) {
   const studio = useCloud.getState().workspace?.name ?? 'our studio'
-  return `Hi ${name.split(' ')[0]}, you're invited to join ${studio} on DesignFlow. Open this link and create your account with ${email.toLowerCase()}:\n${inviteLink(email)}`
+  return `Hi ${name.split(' ')[0]}, you're invited to join ${studio} on Designly. Open this link and create your account with ${email.toLowerCase()}:\n${inviteLink(email)}`
 }

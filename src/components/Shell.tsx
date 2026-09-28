@@ -79,7 +79,7 @@ function Rail() {
   const current = sectionOf(route)
   return (
     <nav aria-label="Primary" className="sticky top-0 hidden h-dvh w-[84px] shrink-0 flex-col items-center gap-2 border-r border-line py-5 md:flex">
-      <button type="button" onClick={() => navigate({ name: 'dashboard' })} className="mb-4 rounded-xl" aria-label="DesignFlow home">
+      <button type="button" onClick={() => navigate({ name: 'dashboard' })} className="mb-4 rounded-xl" aria-label="Designly home">
         <Logo size={40} />
       </button>
       <div className="flex flex-1 flex-col items-center gap-1.5">
