@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { ArrowLeft, CalendarDays, CheckCircle2, Columns3, ExternalLink, List, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, CalendarDays, CheckCircle2, Columns3, ExternalLink, List, Pencil, Plus, Send, Trash2 } from 'lucide-react'
 import { useStore, useUI } from '../lib/store'
 import { entryMs, isClosedKind, kindOf, projectProgress, useCan, useLookups } from '../lib/selectors'
 import { cn, fmtDate, fmtHours, parseDay } from '../lib/utils'
@@ -9,6 +9,10 @@ import { DueBadge, TaskRow, TimerButton } from '../components/items'
 import { Kanban } from '../components/Kanban'
 import { Cover } from '../components/art'
 import { FileChip } from '../components/forms'
+import { FilesBoard, KldPanel } from '../components/ProjectFiles'
+import { QuickInfo } from '../components/ProjectReady'
+import { dimsText, emptyKld, fileGroups, isPackaging, packSizeText } from '../lib/handoff'
+import type { ProjectFile } from '../lib/types'
 
 export default function ProjectDetail({ id }: { id: string }) {
   const s = useStore()
@@ -17,7 +21,7 @@ export default function ProjectDetail({ id }: { id: string }) {
   const setUI = useUI((u) => u.set)
   const notify = useUI((u) => u.notify)
   const can = useCan()
-  const [tab, setTab] = useState<'tasks' | 'brief' | 'files' | 'time'>('tasks')
+  const [tab, setTab] = useState<'info' | 'tasks' | 'files' | 'time'>('info')
   const [taskView, setTaskView] = useState<'list' | 'board'>('list')
   const [quick, setQuick] = useState('')
   const [confirm, setConfirm] = useState(false)
@@ -42,6 +46,12 @@ export default function ProjectDetail({ id }: { id: string }) {
   const archiveStatus = s.statuses.find((x) => x.kind === 'archived')
   const events = s.events.filter((e) => e.projectId === p.id).sort((a, b) => a.date.localeCompare(b.date))
   const firstActive = s.statuses.find((x) => x.kind === 'active') ?? s.statuses[0]!
+  const packaging = isPackaging(p.type)
+  const files = p.files ?? []
+  const lead = member.get(p.leadId ?? p.memberIds[0] ?? '')
+  const edit = (step?: string) => setUI({ projectForm: { open: true, id: p.id, step } })
+  // Uploads finish asynchronously, so always apply file changes to the latest saved list.
+  const updateFiles = (fn: (f: ProjectFile[]) => ProjectFile[]) => s.updateProject(p.id, { files: fn(useStore.getState().projects.find((x) => x.id === p.id)?.files ?? []) })
 
   const addQuick = () => {
     if (!quick.trim()) return
@@ -95,8 +105,13 @@ export default function ProjectDetail({ id }: { id: string }) {
               </select>
               <TimerButton projectId={p.id} size={40} />
               {can('edit') && (
-                <Button icon={<Pencil size={15} />} onClick={() => setUI({ projectForm: { open: true, id: p.id } })}>
+                <Button icon={<Pencil size={15} />} onClick={() => edit()}>
                   Edit
+                </Button>
+              )}
+              {can('edit') && (
+                <Button icon={<Send size={15} />} onClick={() => setUI({ projectEmail: p.id })}>
+                  Send to designer
                 </Button>
               )}
               {can('edit') && !closed && doneStatus && (
@@ -116,9 +131,11 @@ export default function ProjectDetail({ id }: { id: string }) {
               )}
             </div>
           </div>
-          <Cover hue={p.cover.hue} shape={p.cover.shape} className="min-h-48 rounded-[20px]" label={`${p.name} cover`} />
+          <Cover hue={p.cover.hue} shape={p.cover.shape} className="hidden min-h-48 rounded-[20px] sm:block" label={`${p.name} cover`} />
         </div>
       </div>
+
+      <QuickInfo p={p} />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 lg:gap-5">
         <Card className="flex items-center gap-4">
@@ -145,7 +162,7 @@ export default function ProjectDetail({ id }: { id: string }) {
           <p className="mt-2 text-xs text-ink-3">{estimate}h estimated across tasks</p>
         </Card>
         <Card>
-          <p className="mb-2 text-[13px] text-ink-3">Team</p>
+          <p className="mb-2 text-[13px] text-ink-3">Team{lead && <> · lead <span className="text-ink">{lead.name.split(' ')[0]}</span></>}</p>
           <div className="flex flex-wrap gap-2">
             {p.memberIds.map((mid) => {
               const m = member.get(mid)
@@ -165,9 +182,9 @@ export default function ProjectDetail({ id }: { id: string }) {
           value={tab}
           onChange={setTab}
           options={[
+            { value: 'info', label: 'Project info' },
             { value: 'tasks', label: `Tasks · ${tasks.length}` },
-            { value: 'brief', label: 'Brief & notes' },
-            { value: 'files', label: `Files · ${p.attachments.length}` },
+            { value: 'files', label: `Files · ${fileGroups(files).length + p.attachments.length}` },
             { value: 'time', label: 'Timeline' },
           ]}
         />
@@ -235,11 +252,45 @@ export default function ProjectDetail({ id }: { id: string }) {
         </>
       )}
 
-      {tab === 'brief' && (
+      {tab === 'info' && (
         <div className="grid gap-4 lg:grid-cols-2 lg:gap-5">
           <Card>
-            <CardHeader title="Brief" />
+            <CardHeader title="Project information" action={can('edit') && <Button size="sm" variant="ghost" icon={<Pencil size={14} />} onClick={() => edit('basics')}>Edit</Button>} />
+            <InfoList
+              rows={[
+                ['Project name', p.name],
+                ['Client / brand', c?.name],
+                ['Project type', p.type],
+                ['Assigned designer', lead?.name],
+                ['Priority', p.priority[0]!.toUpperCase() + p.priority.slice(1)],
+                ['Start date', fmtDate(p.startDate)],
+                ['Deadline', fmtDate(p.deadline)],
+                ['Description', p.description],
+              ]}
+            />
+            <p className="eyebrow mt-6 mb-2">Creative brief</p>
             <p className="max-w-prose text-[15px] leading-relaxed whitespace-pre-wrap text-ink-2">{p.brief || 'No brief yet.'}</p>
+            {(p.links.length > 0 || files.some((f) => f.category === 'reference')) && (
+              <>
+                <p className="eyebrow mt-6 mb-2">Reference files</p>
+                <ul className="flex flex-col gap-1.5">
+                  {p.links.map((l) => (
+                    <li key={l.id}>
+                      <a href={l.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm hover:underline">
+                        <ExternalLink size={13} className="text-ink-3" /> {l.label || l.url}
+                      </a>
+                    </li>
+                  ))}
+                  {fileGroups(files, 'reference').map((g) => (
+                    <li key={g[0]!.groupId}>
+                      <button type="button" onClick={() => setTab('files')} className="text-sm hover:underline">
+                        {g[0]!.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
             {p.software.length > 0 && (
               <>
                 <p className="eyebrow mt-6 mb-2">Software</p>
@@ -252,46 +303,83 @@ export default function ProjectDetail({ id }: { id: string }) {
                 </div>
               </>
             )}
-          </Card>
-          <Card>
-            <CardHeader title="Notes" sub="Saved as you type" />
+            <p className="eyebrow mt-6 mb-2">Notes</p>
             <textarea
               id="pd-notes"
               aria-label="Project notes"
               readOnly={!can('edit')}
-              className="min-h-[220px] w-full resize-y rounded-2xl border border-line bg-surface-2 p-4 text-[15px] leading-relaxed outline-none focus:border-accent-text/60"
+              className="min-h-[140px] w-full resize-y rounded-2xl border border-line bg-surface-2 p-4 text-[15px] leading-relaxed outline-none focus:border-accent-text/60"
               value={p.notes}
+              placeholder="Saved as you type"
               onChange={(e) => s.updateProject(p.id, { notes: e.target.value })}
             />
           </Card>
+          <div className="flex flex-col gap-4 lg:gap-5">
+            {(packaging || p.pack?.productName) && (
+              <Card>
+                <CardHeader title="Pack details" action={can('edit') && <Button size="sm" variant="ghost" icon={<Pencil size={14} />} onClick={() => edit('pack')}>Edit</Button>} />
+                <InfoList
+                  rows={[
+                    ['Product name', p.pack?.productName],
+                    ['Product category', p.pack?.category],
+                    ['Pack type', p.pack?.packType],
+                    ['Pack size', packSizeText(p.pack)],
+                    ['Pack dimensions', dimsText(p.pack)],
+                    ['Pack material', p.pack?.material],
+                    ['Quantity / variants', p.pack?.variants],
+                    ['SKU', p.pack?.sku],
+                    ['Barcode', p.pack?.barcode],
+                    ['Printing process', p.pack?.printing],
+                    ['Finishing', p.pack?.finishing],
+                    ['Languages', p.pack?.languages],
+                  ]}
+                />
+              </Card>
+            )}
+            {packaging && (
+              <Card>
+                <KldPanel projectId={p.id} files={files} update={updateFiles} kld={p.kld ?? emptyKld()} onKld={(k) => s.updateProject(p.id, { kld: k })} canEdit={can('edit')} />
+              </Card>
+            )}
+          </div>
         </div>
       )}
 
       {tab === 'files' && (
-        <div className="grid gap-4 lg:grid-cols-[2fr_1fr] lg:gap-5">
+        <div className="flex flex-col gap-4 lg:gap-5">
           <Card>
-            <CardHeader title="Attachments" sub="Final files are marked" />
-            <div className="grid gap-2 sm:grid-cols-2">
-              {p.attachments.map((f) => (
-                <FileChip key={f.id} file={f} />
-              ))}
+            <CardHeader title="Project files" sub="Uploading to an existing file adds a new version. Older versions are kept." />
+            <FilesBoard projectId={p.id} files={files} update={updateFiles} canEdit={can('edit')} />
+            {!can('edit') && !files.length && <EmptyState title="No files yet" />}
+          </Card>
+          {(p.attachments.length > 0 || p.links.length > 0) && (
+            <div className="grid gap-4 lg:grid-cols-[2fr_1fr] lg:gap-5">
+              {p.attachments.length > 0 && (
+                <Card>
+                  <CardHeader title="Earlier attachments" sub="Names only. Upload the files above to share them." />
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {p.attachments.map((f) => (
+                      <FileChip key={f.id} file={f} />
+                    ))}
+                  </div>
+                </Card>
+              )}
+              <Card>
+                <CardHeader title="Links" />
+                <ul className="flex flex-col gap-2">
+                  {p.links.map((l) => (
+                    <li key={l.id}>
+                      <a href={l.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-2xl border border-line bg-surface-2 px-3 py-2.5 text-sm hover:border-line-strong">
+                        <ExternalLink size={14} className="text-ink-3" />
+                        <span className="flex-1 truncate">{l.label || l.url}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                {!p.links.length && <p className="text-sm text-ink-3">No links yet.</p>}
+              </Card>
             </div>
-            {!p.attachments.length && <EmptyState title="No files yet" body="Add files from Edit." />}
-          </Card>
-          <Card>
-            <CardHeader title="Links" />
-            <ul className="flex flex-col gap-2">
-              {p.links.map((l) => (
-                <li key={l.id}>
-                  <a href={l.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-2xl border border-line bg-surface-2 px-3 py-2.5 text-sm hover:border-line-strong">
-                    <ExternalLink size={14} className="text-ink-3" />
-                    <span className="flex-1 truncate">{l.label || l.url}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-            {!p.links.length && <p className="text-sm text-ink-3">No links yet.</p>}
-          </Card>
+          )}
         </div>
       )}
 
@@ -347,5 +435,18 @@ export default function ProjectDetail({ id }: { id: string }) {
         </div>
       )}
     </div>
+  )
+}
+
+function InfoList({ rows }: { rows: [string, string | undefined | null][] }) {
+  return (
+    <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+      {rows.map(([k, v]) => (
+        <div key={k} className={cn('min-w-0', k === 'Description' && 'sm:col-span-2')}>
+          <dt className="text-xs text-ink-3">{k}</dt>
+          <dd className={cn('text-sm', v ? 'text-ink' : 'text-ink-3')}>{v || '—'}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }

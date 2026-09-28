@@ -66,6 +66,60 @@ export interface Client {
   createdAt: string
 }
 
+export type FileCategory = 'brief' | 'kld' | 'brand' | 'reference' | 'previous' | 'copy' | 'product' | 'final' | 'other'
+
+/** One uploaded file version. Versions of the same file share a groupId and are never overwritten. */
+export interface ProjectFile {
+  id: ID
+  groupId: ID
+  category: FileCategory
+  name: string
+  mime: string
+  bytes: number
+  uploadedBy: ID
+  at: string
+  version: string
+  /** Supabase Storage path when saved to the cloud. */
+  path?: string
+  /** Small files kept in the browser when cloud storage is off. */
+  dataUrl?: string
+}
+
+export type DimUnit = 'mm' | 'cm' | 'inch'
+
+export interface PackDetails {
+  productName: string
+  category: string
+  packType: string
+  packSize: string
+  customSize: string
+  width: string
+  height: string
+  depth: string
+  unit: DimUnit
+  material: string
+  variants: string
+  sku: string
+  barcode: string
+  printing: string
+  finishing: string
+  languages: string
+}
+
+export interface KldInfo {
+  /** The owner chose to add the KLD later; the project can go ahead without it. */
+  later: boolean
+  version: string
+  date: string
+  dimensions: string
+  vendor: string
+  specs: string
+  colors: string
+  bleed: string
+  safety: string
+  instructions: string
+}
+
 export interface Project {
   id: ID
   name: string
@@ -86,6 +140,11 @@ export interface Project {
   cover: { hue: number; shape: number }
   createdAt: string
   completedAt?: string
+  /** The designer responsible for the work. */
+  leadId?: ID | null
+  pack?: PackDetails
+  kld?: KldInfo
+  files?: ProjectFile[]
 }
 
 export interface Task {

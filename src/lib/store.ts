@@ -22,7 +22,7 @@ interface State extends DemoData {
   readIds: ID[]
   dismissedIds: ID[]
 
-  addProject: (p: Omit<Project, 'id' | 'createdAt'>) => Project
+  addProject: (p: Omit<Project, 'id' | 'createdAt'> & { id?: ID }) => Project
   updateProject: (id: ID, patch: Partial<Project>) => void
   removeProject: (id: ID) => void
 
@@ -80,7 +80,7 @@ export const useStore = create<State>()(
       dismissedIds: [],
 
       addProject: (p) => {
-        const project: Project = { ...p, id: uid('p'), createdAt: now() }
+        const project: Project = { ...p, id: p.id ?? uid('p'), createdAt: now() }
         project.completedAt = completionFor(get().statuses, project.statusId)
         set((s) => ({ projects: [project, ...s.projects] }))
         return project
@@ -273,9 +273,11 @@ interface UIState {
   search: boolean
   notifications: boolean
   shortcuts: boolean
-  projectForm: { open: boolean; id?: ID; preset?: Partial<Project> }
+  projectForm: { open: boolean; id?: ID; preset?: Partial<Project>; step?: string }
   taskForm: { open: boolean; id?: ID; preset?: Partial<Task> }
   taskDetail: ID | null
+  /** Project whose handoff email sheet is open. */
+  projectEmail: ID | null
   clientForm: { open: boolean; id?: ID }
   projectsTag: string | null
   toast: { id: number; text: string; action?: { label: string; run: () => void } } | null
@@ -316,6 +318,7 @@ export const useUI = create<UIState>()((set) => ({
   notifications: false,
   shortcuts: false,
   projectForm: { open: false },
+  projectEmail: null,
   taskForm: { open: false },
   taskDetail: null,
   clientForm: { open: false },

@@ -90,3 +90,24 @@ create policy "editors update records" on public.records for update using (publi
 do $$ begin
   alter publication supabase_realtime add table public.records;
 exception when duplicate_object then null; end $$;
+
+-- Project files (briefs, KLDs, artwork). The bucket is private: members get short-lived links.
+-- Files live at <workspace id>/<project id>/<file>, so access follows the workspace role.
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('project-files', 'project-files', false, 52428800)
+on conflict (id) do nothing;
+
+create or replace function public.file_workspace(path text) returns uuid
+language sql immutable as $$
+  select case when split_part(path, '/', 1) ~ '^[0-9a-f-]{36}$' then split_part(path, '/', 1)::uuid end
+$$;
+
+drop policy if exists "members read project files" on storage.objects;
+create policy "members read project files" on storage.objects for select to authenticated
+  using (bucket_id = 'project-files' and public.my_role(public.file_workspace(name)) is not null);
+drop policy if exists "editors upload project files" on storage.objects;
+create policy "editors upload project files" on storage.objects for insert to authenticated
+  with check (bucket_id = 'project-files' and public.my_role(public.file_workspace(name)) in ('Owner', 'Admin', 'Designer', 'Reviewer'));
+drop policy if exists "editors delete project files" on storage.objects;
+create policy "editors delete project files" on storage.objects for delete to authenticated
+  using (bucket_id = 'project-files' and public.my_role(public.file_workspace(name)) in ('Owner', 'Admin', 'Designer'));

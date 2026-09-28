@@ -2,11 +2,11 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { addDays } from 'date-fns'
 import { FileArchive, FileImage, FileText, FileVideo, PenTool, Link2, Paperclip, Plus, Trash2, Upload, X } from 'lucide-react'
 import { useStore, useUI } from '../lib/store'
-import { useCan, useCurrentUser } from '../lib/selectors'
-import { PROJECT_TYPES, INDUSTRIES } from '../lib/demo'
+import { useCurrentUser } from '../lib/selectors'
+import { INDUSTRIES } from '../lib/demo'
 import type { Attachment, LinkRef, Priority, Project, Task } from '../lib/types'
 import { cn, PRIORITIES, priorityLabel, toISODate, todayISO, uid } from '../lib/utils'
-import { Avatar, Button, Field, inputCls, Modal, TagInput, textareaCls } from './ui'
+import { Avatar, Button, Field, inputCls, Modal, textareaCls } from './ui'
 
 export function fileKind(name: string, mime = ''): Attachment['kind'] {
   const n = name.toLowerCase()
@@ -88,7 +88,7 @@ export function FilePicker({ value, onChange, id }: { value: Attachment[]; onCha
   )
 }
 
-function LinksEditor({ value, onChange }: { value: LinkRef[]; onChange: (v: LinkRef[]) => void }) {
+export function LinksEditor({ value, onChange }: { value: LinkRef[]; onChange: (v: LinkRef[]) => void }) {
   return (
     <div className="flex flex-col gap-2">
       {value.map((l, i) => (
@@ -107,7 +107,7 @@ function LinksEditor({ value, onChange }: { value: LinkRef[]; onChange: (v: Link
   )
 }
 
-function MemberPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+export function MemberPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
   const members = useStore((s) => s.members)
   return (
     <div className="flex flex-wrap gap-2">
@@ -130,7 +130,7 @@ function MemberPicker({ value, onChange }: { value: string[]; onChange: (v: stri
   )
 }
 
-function PriorityPicker({ value, onChange }: { value: Priority; onChange: (p: Priority) => void }) {
+export function PriorityPicker({ value, onChange }: { value: Priority; onChange: (p: Priority) => void }) {
   return (
     <div className="flex gap-1.5" role="radiogroup" aria-label="Priority">
       {PRIORITIES.map((p) => (
@@ -149,7 +149,7 @@ function PriorityPicker({ value, onChange }: { value: Priority; onChange: (p: Pr
   )
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <fieldset className="flex flex-col gap-4 border-t border-line pt-5 first:border-0 first:pt-0">
       <legend className="eyebrow float-left mb-1 w-full">{title}</legend>
@@ -158,7 +158,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   )
 }
 
-const blankProject = (statusId: string, me: string): Omit<Project, 'id' | 'createdAt'> => ({
+export const blankProject = (statusId: string, me: string): Omit<Project, 'id' | 'createdAt'> => ({
   name: '',
   clientId: null,
   type: 'Branding',
@@ -177,161 +177,6 @@ const blankProject = (statusId: string, me: string): Omit<Project, 'id' | 'creat
   cover: { hue: Math.floor(Math.random() * 360), shape: Math.floor(Math.random() * 4) },
 })
 
-export function ProjectForm() {
-  const form = useUI((s) => s.projectForm)
-  const setUI = useUI((s) => s.set)
-  const notify = useUI((s) => s.notify)
-  const navigate = useUI((s) => s.navigate)
-  const { projects, clients, statuses, addProject, updateProject, addClient } = useStore()
-  const me = useCurrentUser()
-  const can = useCan()
-  const existing = form.id ? projects.find((p) => p.id === form.id) : undefined
-  const [v, setV] = useState(() => blankProject(statuses[0]!.id, me.id))
-  const [newClient, setNewClient] = useState('')
-
-  useEffect(() => {
-    if (!form.open) return
-    setV(existing ? { ...existing } : { ...blankProject((statuses.find((s) => s.kind === 'backlog') ?? statuses[0]!).id, me.id), ...form.preset })
-    setNewClient('')
-  }, [form.open, form.id])
-
-  const set = <K extends keyof typeof v>(k: K, val: (typeof v)[K]) => setV((x) => ({ ...x, [k]: val }))
-  const close = () => setUI({ projectForm: { open: false } })
-  const readOnly = !can('edit')
-
-  const save = () => {
-    if (!v.name.trim()) return
-    let clientId = v.clientId
-    if (clientId === '__new' && newClient.trim()) {
-      clientId = addClient({ name: newClient.trim(), contact: '', email: '', phone: '', website: '', location: '', industry: '', notes: '', hue: Math.floor(Math.random() * 360) }).id
-    } else if (clientId === '__new') clientId = null
-    const data = { ...v, clientId, name: v.name.trim(), links: v.links.filter((l) => l.url.trim()) }
-    if (existing) {
-      updateProject(existing.id, data)
-      notify('Project updated')
-    } else {
-      const p = addProject(data)
-      notify(`“${p.name}” created`, { label: 'Open', run: () => navigate({ name: 'project', id: p.id }) })
-    }
-    close()
-  }
-
-  return (
-    <Modal
-      open={form.open}
-      onClose={close}
-      title={existing ? 'Edit project' : 'New project'}
-      wide
-      footer={
-        <>
-          <Button variant="ghost" onClick={close}>
-            Cancel
-          </Button>
-          <Button variant="accent" onClick={save} disabled={!v.name.trim() || readOnly}>
-            {existing ? 'Save changes' : 'Create project'}
-          </Button>
-        </>
-      }
-    >
-      {readOnly && <p className="mb-4 rounded-2xl bg-warn-soft px-4 py-3 text-[13px] text-warn">Your role can view projects but not change them.</p>}
-      <form
-        className="flex flex-col gap-5"
-        onSubmit={(e) => {
-          e.preventDefault()
-          save()
-        }}
-      >
-        <Section title="Basics">
-          <Field label="Project name">
-            <input id="pf-name" className={cn(inputCls, 'h-12 text-base')} value={v.name} onChange={(e) => set('name', e.target.value)} placeholder="Summer Campaign" required />
-          </Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Client / company">
-              <select id="pf-client" className={inputCls} value={v.clientId ?? ''} onChange={(e) => set('clientId', e.target.value || null)}>
-                <option value="">Personal project</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-                <option value="__new">+ New client…</option>
-              </select>
-            </Field>
-            {v.clientId === '__new' ? (
-              <Field label="New client name">
-                <input id="pf-newclient" className={inputCls} value={newClient} onChange={(e) => setNewClient(e.target.value)} placeholder="Company name" />
-              </Field>
-            ) : (
-              <Field label="Project type">
-                <select id="pf-type" className={inputCls} value={v.type} onChange={(e) => set('type', e.target.value)}>
-                  {PROJECT_TYPES.map((t) => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </select>
-              </Field>
-            )}
-          </div>
-          <Field label="Description">
-            <textarea id="pf-desc" className={textareaCls} value={v.description} onChange={(e) => set('description', e.target.value)} placeholder="One or two lines on what this is." rows={2} />
-          </Field>
-          <Field label="Brief" hint="Goals, deliverables, tone, must-haves.">
-            <textarea id="pf-brief" className={cn(textareaCls, 'min-h-[110px]')} value={v.brief} onChange={(e) => set('brief', e.target.value)} placeholder="What does the client need, and what does success look like?" />
-          </Field>
-        </Section>
-
-        <Section title="Schedule & status">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Start date">
-              <input id="pf-start" type="date" className={inputCls} value={v.startDate} onChange={(e) => set('startDate', e.target.value)} />
-            </Field>
-            <Field label="Deadline">
-              <input id="pf-deadline" type="date" className={inputCls} value={v.deadline} onChange={(e) => set('deadline', e.target.value)} />
-            </Field>
-            <Field label="Status">
-              <select id="pf-status" className={inputCls} value={v.statusId} onChange={(e) => set('statusId', e.target.value)}>
-                {statuses.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          </div>
-          <Field label="Priority">
-            <PriorityPicker value={v.priority} onChange={(p) => set('priority', p)} />
-          </Field>
-        </Section>
-
-        <Section title="People & tags">
-          <Field label="Team members">
-            <MemberPicker value={v.memberIds} onChange={(ids) => set('memberIds', ids)} />
-          </Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Tags">
-              <TagInput id="pf-tags" value={v.tags} onChange={(t) => set('tags', t)} placeholder="packaging, launch…" />
-            </Field>
-            <Field label="Software">
-              <TagInput id="pf-software" value={v.software} onChange={(t) => set('software', t)} placeholder="figma, illustrator…" />
-            </Field>
-          </div>
-        </Section>
-
-        <Section title="Files, links & notes">
-          <Field label="Attachments">
-            <FilePicker id="pf-files" value={v.attachments} onChange={(a) => set('attachments', a)} />
-          </Field>
-          <Field label="Links">
-            <LinksEditor value={v.links} onChange={(l) => set('links', l)} />
-          </Field>
-          <Field label="Notes">
-            <textarea id="pf-notes" className={textareaCls} value={v.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Anything worth remembering." />
-          </Field>
-        </Section>
-        <button type="submit" hidden />
-      </form>
-    </Modal>
-  )
-}
 
 export function TaskForm() {
   const form = useUI((s) => s.taskForm)

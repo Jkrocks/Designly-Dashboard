@@ -7,7 +7,9 @@ import { CloudGate } from './components/CloudGate'
 import QuickCapture from './components/QuickCapture'
 import Search from './components/Search'
 import TaskDetail from './components/TaskDetail'
-import { ClientForm, ProjectForm, TaskForm } from './components/forms'
+import { ClientForm, TaskForm } from './components/forms'
+import { ProjectForm } from './components/ProjectForm'
+import { ProjectEmailSheet } from './components/ProjectReady'
 import { NotificationsPanel, ShortcutsDialog, Toast } from './components/overlays'
 import Dashboard from './pages/Dashboard'
 import Projects from './pages/Projects'
@@ -113,6 +115,7 @@ export default function App() {
       <Search />
       <TaskDetail />
       <ProjectForm />
+      <ProjectEmailSheet />
       <TaskForm />
       <ClientForm />
       <NotificationsPanel />

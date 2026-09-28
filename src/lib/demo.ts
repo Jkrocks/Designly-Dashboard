@@ -5,6 +5,7 @@ import type {
   CalendarEvent,
   Client,
   Member,
+  PackDetails,
   Priority,
   Project,
   Settings,
@@ -13,6 +14,7 @@ import type {
   TimeEntry,
 } from './types'
 import { toISODate } from './utils'
+import { emptyKld, emptyPack } from './handoff'
 
 /** Deterministic RNG so the demo looks the same on every fresh load. */
 function rng(seed: number) {
@@ -199,6 +201,20 @@ interface ProjectSeed {
   brief: string
   tasks: [string, string, number, Priority, number][] // title, status, dueOffset, priority, estimate
   completedOffset?: number
+}
+
+const pack = (p: Partial<PackDetails>): PackDetails => ({ ...emptyPack(), ...p })
+
+/** Pack and KLD details for the packaging demo projects. */
+const packSeeds: Record<string, Partial<Project>> = {
+  p_dosa: {
+    pack: pack({ productName: 'Idli & Dosa Batter', category: 'Ready-to-cook batter', packType: 'Stand-up pouch', packSize: '1 kg', width: '200', height: '300', depth: '60', material: 'Laminated film (PET/PE)', variants: '3 regional variants', sku: 'IDF-DB-1KG', barcode: 'EAN-13 8906082910014', printing: 'Rotogravure', finishing: 'Matte with spot gloss', languages: 'English, Kannada, Tamil, Malayalam' }),
+    kld: { ...emptyKld(), version: 'R2 from printer', dimensions: 'Open size 420 × 320 mm', vendor: 'Sai Flexi Packaging', colors: 'CMYK + 1 spot (brand blue)', bleed: '3 mm', safety: '6 mm from seals', specs: 'Reverse print, white underlay', instructions: 'Keep the zipper band and barcode zone clear.' },
+  },
+  p_sahara: {
+    pack: pack({ productName: 'Sahara Glow Serum', category: 'Skin care', packType: 'Carton box', packSize: '30 ml', width: '40', height: '120', depth: '40', material: 'Paperboard', variants: '1', printing: 'Offset', finishing: 'Soft-touch with gold foil', languages: 'English, Arabic, French' }),
+    kld: { ...emptyKld(), later: true },
+  },
 }
 
 const projectSeeds: ProjectSeed[] = [
@@ -470,6 +486,8 @@ export function buildDemo(now = new Date()): DemoData {
       cover: { hue: (clientSeeds.find((c) => c.id === s.client)?.hue ?? 200) + Math.floor(r() * 40 - 20), shape: Math.floor(r() * 4) },
       createdAt: stamp(s.start - 2),
       completedAt: done ? stamp(s.completedOffset!, 17) : undefined,
+      leadId: s.members[1] ?? s.members[0] ?? null,
+      ...packSeeds[s.id],
     })
 
     for (const [title, status, dueOffset, priority, estimate] of s.tasks) {
