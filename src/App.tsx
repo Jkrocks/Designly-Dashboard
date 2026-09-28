@@ -20,6 +20,8 @@ import { ClientDetail, Clients } from './pages/Clients'
 import Time from './pages/Time'
 import Insights from './pages/Insights'
 import Archive from './pages/Archive'
+import Reports from './pages/Reports'
+import { ReportBuilder } from './components/ReportBuilder'
 import Settings from './pages/Settings'
 import Profile from './pages/Profile'
 
@@ -35,6 +37,7 @@ function Page({ route }: { route: Route }) {
     case 'time': return <Time />
     case 'insights': return <Insights />
     case 'archive': return <Archive />
+    case 'reports': return <Reports tab={route.tab} />
     case 'settings': return <Settings tab={route.tab} />
     case 'profile': return <Profile id={route.id} />
   }
@@ -42,7 +45,7 @@ function Page({ route }: { route: Route }) {
 
 const GOTO: Record<string, Route> = {
   d: { name: 'dashboard' }, p: { name: 'projects' }, t: { name: 'tasks' }, c: { name: 'calendar' },
-  l: { name: 'clients' }, m: { name: 'time' }, i: { name: 'insights' }, a: { name: 'archive' }, s: { name: 'settings' },
+  l: { name: 'clients' }, m: { name: 'time' }, i: { name: 'insights' }, a: { name: 'archive' }, r: { name: 'reports' }, s: { name: 'settings' },
 }
 
 function useShortcuts() {
@@ -116,6 +119,7 @@ export default function App() {
       <TaskDetail />
       <ProjectForm />
       <ProjectEmailSheet />
+      <ReportBuilder />
       <TaskForm />
       <ClientForm />
       <NotificationsPanel />

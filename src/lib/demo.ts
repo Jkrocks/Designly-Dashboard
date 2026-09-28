@@ -6,6 +6,7 @@ import type {
   Client,
   Member,
   PackDetails,
+  ReportRecord,
   Priority,
   Project,
   Settings,
@@ -420,6 +421,7 @@ export interface DemoData {
   events: CalendarEvent[]
   entries: TimeEntry[]
   notifications: AppNotification[]
+  reports: ReportRecord[]
   settings: Settings
 }
 
@@ -580,6 +582,7 @@ export function buildDemo(now = new Date()): DemoData {
     events,
     entries,
     notifications,
+    reports: [],
     settings: { theme: 'dark', currentUserId: 'm_me', workspaceName: 'Studio North', weekStartsOn: 1, mode: 'team' },
   }
 }

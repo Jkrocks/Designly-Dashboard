@@ -9,6 +9,7 @@ import type {
   ID,
   Member,
   Project,
+  ReportRecord,
   Settings,
   Status,
   Task,
@@ -58,6 +59,8 @@ interface State extends DemoData {
   dismiss: (id: ID) => void
 
   updateSettings: (patch: Partial<Settings>) => void
+  addReport: (r: ReportRecord) => void
+  removeReport: (id: ID) => void
   resetDemo: () => void
   startFresh: () => void
 }
@@ -209,6 +212,8 @@ export const useStore = create<State>()(
       dismiss: (id) => set((s) => ({ dismissedIds: [...s.dismissedIds, id] })),
 
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
+      addReport: (r) => set((s) => ({ reports: [r, ...s.reports.filter((x) => x.id !== r.id)] })),
+      removeReport: (id) => set((s) => ({ reports: s.reports.filter((x) => x.id !== id) })),
       resetDemo: () => set({ ...buildDemo(), timer: null, readIds: [], dismissedIds: [] }),
       startFresh: () =>
         set((s) => {
@@ -220,6 +225,7 @@ export const useStore = create<State>()(
             events: [],
             entries: [],
             notifications: [],
+            reports: [],
             members: [me],
             timer: null,
             readIds: [],
@@ -263,8 +269,19 @@ export type Route =
   | { name: 'time' }
   | { name: 'insights' }
   | { name: 'archive' }
+  | { name: 'reports'; tab?: string }
   | { name: 'settings'; tab?: string }
   | { name: 'profile'; id: ID }
+
+export interface ReportRequest {
+  title: string
+  from: string
+  to: string
+  designerId?: ID
+  projectIds?: ID[]
+  /** Reopening a saved report keeps its artwork choices. */
+  record?: ReportRecord
+}
 
 interface UIState {
   route: Route
@@ -278,6 +295,8 @@ interface UIState {
   taskDetail: ID | null
   /** Project whose handoff email sheet is open. */
   projectEmail: ID | null
+  /** The month-end report builder, open for a period and optional filter. */
+  reportBuilder: ReportRequest | null
   clientForm: { open: boolean; id?: ID }
   projectsTag: string | null
   toast: { id: number; text: string; action?: { label: string; run: () => void } } | null
@@ -287,18 +306,18 @@ interface UIState {
 
 export function routeToHash(r: Route) {
   if (r.name === 'project' || r.name === 'client' || r.name === 'profile') return `#${r.name}-${r.id}`
-  if (r.name === 'settings' && r.tab) return `#settings-${r.tab}`
+  if ((r.name === 'settings' || r.name === 'reports') && r.tab) return `#${r.name}-${r.tab}`
   return `#${r.name}`
 }
 
 export function hashToRoute(hash: string): Route {
   const h = hash.replace(/^#/, '')
-  const m = h.match(/^(project|client|profile|settings)-(.+)$/)
+  const m = h.match(/^(project|client|profile|settings|reports)-(.+)$/)
   if (m) {
-    if (m[1] === 'settings') return { name: 'settings', tab: m[2] }
+    if (m[1] === 'settings' || m[1] === 'reports') return { name: m[1], tab: m[2] }
     return { name: m[1] as 'project' | 'client' | 'profile', id: m[2]! }
   }
-  const simple = ['dashboard', 'projects', 'tasks', 'calendar', 'clients', 'time', 'insights', 'archive', 'settings'] as const
+  const simple = ['dashboard', 'projects', 'tasks', 'calendar', 'clients', 'time', 'insights', 'archive', 'reports', 'settings'] as const
   return (simple as readonly string[]).includes(h) ? ({ name: h } as Route) : { name: 'dashboard' }
 }
 
@@ -319,6 +338,7 @@ export const useUI = create<UIState>()((set) => ({
   shortcuts: false,
   projectForm: { open: false },
   projectEmail: null,
+  reportBuilder: null,
   taskForm: { open: false },
   taskDetail: null,
   clientForm: { open: false },

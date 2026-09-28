@@ -210,3 +210,17 @@ export interface Settings {
   weekStartsOn: 0 | 1
   mode: 'solo' | 'team'
 }
+
+/** A generated report. The deck is rebuilt from live project data on download, using the artwork chosen here. */
+export interface ReportRecord {
+  id: ID
+  title: string
+  from: string
+  to: string
+  generatedAt: string
+  generatedBy: ID
+  projectIds: ID[]
+  /** Final artwork file ids chosen per project. */
+  images: Record<ID, ID[]>
+  stats: { projects: number; finals: number; designers: number; deliverables: number }
+}

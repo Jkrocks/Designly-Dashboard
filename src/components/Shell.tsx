@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import {
+  Presentation,
   Archive,
   Bell,
   CalendarDays,
@@ -35,6 +36,7 @@ export const NAV: { name: Route['name']; label: string; icon: typeof LayoutDashb
   { name: 'clients', label: 'Clients', icon: Users, key: 'l' },
   { name: 'time', label: 'Time', icon: Timer, key: 'm' },
   { name: 'insights', label: 'Insights', icon: ChartNoAxesColumn, key: 'i' },
+  { name: 'reports', label: 'Reports', icon: Presentation, key: 'r' },
   { name: 'archive', label: 'Archive', icon: Archive, key: 'a' },
 ]
 

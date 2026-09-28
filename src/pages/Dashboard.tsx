@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import { addDays, format, isSameDay, startOfDay, subDays } from 'date-fns'
-import { ArrowUpRight, CalendarClock, CheckCircle2, Clock3, Flag, Plus, Sparkles, Trophy } from 'lucide-react'
+import { ArrowUpRight, CalendarClock, CheckCircle2, Clock3, Flag, Plus, Presentation, Sparkles, Trophy } from 'lucide-react'
 import { useStore, useUI } from '../lib/store'
 import { entryMs, isClosedKind, isFinishedKind, kindOf, sumMs, useCurrentUser, useLookups } from '../lib/selectors'
 import { cn, daysUntil, dueLabel, fmtDate, fmtHours, greeting, hoursOf, parseDay, pluralize } from '../lib/utils'
 import { Button, Card, CardHeader, ClientMark, EmptyState, Ring, Segmented, StatusPill } from '../components/ui'
 import { PillBars } from '../components/charts'
+import { previousMonth } from '../lib/report'
 import { DueBadge, ProjectCard, TaskRow, TimerButton } from '../components/items'
 import { Cover } from '../components/art'
 
@@ -110,7 +111,10 @@ export default function Dashboard() {
               </h1>
               <p className="mt-2 max-w-xl text-[15px] text-ink-2">{summary}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button icon={<Presentation size={16} />} onClick={() => setUI({ reportBuilder: previousMonth() })}>
+                Generate month-end report
+              </Button>
               <Button variant="accent" icon={<Plus size={18} strokeWidth={2.4} />} onClick={() => setUI({ projectForm: { open: true } })}>
                 New project
               </Button>

@@ -14,7 +14,7 @@ export const cloudEnabled = !!(url && key)
 export const supabase: SupabaseClient | null = cloudEnabled ? createClient(url!, key!, { auth: { persistSession: true, detectSessionInUrl: true } }) : null
 
 /** Shared collections. Timer, theme and read-state stay on each person's device. */
-const COLLECTIONS = ['statuses', 'members', 'clients', 'projects', 'tasks', 'events', 'entries', 'notifications'] as const
+const COLLECTIONS = ['statuses', 'members', 'clients', 'projects', 'tasks', 'events', 'entries', 'notifications', 'reports'] as const
 type Collection = (typeof COLLECTIONS)[number]
 type Row = { collection: string; id: string; data: unknown; deleted: boolean }
 
@@ -165,8 +165,9 @@ export async function createWorkspace(name: string, withDemo: boolean) {
           events: seed.events,
           entries: swap(seed.entries),
           notifications: seed.notifications,
+          reports: [],
         }
-      : { statuses: DEFAULT_STATUSES, members: [myProfile], clients: [], projects: [], tasks: [], events: [], entries: [], notifications: [] }
+      : { statuses: DEFAULT_STATUSES, members: [myProfile], clients: [], projects: [], tasks: [], events: [], entries: [], notifications: [], reports: [] }
     const rows: { workspace_id: string; collection: string; id: string; data: unknown; deleted: boolean }[] = COLLECTIONS.flatMap((col) =>
       collections[col].map((item, i) => ({ workspace_id: ws.id, collection: col, id: item.id, data: col === 'statuses' ? { ...item, order: i } : item, deleted: false })),
     )
