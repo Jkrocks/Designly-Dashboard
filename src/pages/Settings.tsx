@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowDown, ArrowUp, Link2, Mail, Monitor, Moon, Plus, RotateCcw, Sun, Trash2, UserPlus } from 'lucide-react'
 import { useStore, useUI } from '../lib/store'
 import { ROLE_INFO, useCan, useCurrentUser } from '../lib/selectors'
 import type { Role, StatusKind } from '../lib/types'
 import { cn } from '../lib/utils'
 import { ShareSheet } from '../components/ShareSheet'
-import { cloudEnabled, sendInviteEmail, inviteMember, inviteMessage, memberIdFor, messageOf, openWorkspace, removeMemberAccess, setMemberRole, signOut, useCloud } from '../lib/cloud'
+import { cloudEnabled, fetchInviteCode, sendInviteEmail, inviteMember, inviteMessage, memberIdFor, messageOf, openWorkspace, removeMemberAccess, setMemberRole, signOut, useCloud } from '../lib/cloud'
 import { Avatar, Button, Card, CardHeader, Field, IconButton, inputCls, Modal, PageHeader, Segmented } from '../components/ui'
 
 const KIND_LABEL: Record<StatusKind, string> = {
@@ -363,14 +363,34 @@ export default function Settings({ tab = 'general' }: { tab?: string }) {
 }
 
 function ShareInvite({ target, onClose }: { target: { name: string; email: string } | null; onClose: () => void }) {
+  // undefined while loading, null when there is no open invite (they already joined).
+  const [code, setCode] = useState<string | null | undefined>(undefined)
+  useEffect(() => {
+    setCode(undefined)
+    if (!target) return
+    let live = true
+    fetchInviteCode(target.email).then(
+      (c) => live && setCode(c),
+      () => live && setCode(null),
+    )
+    return () => {
+      live = false
+    }
+  }, [target])
   return (
     <ShareSheet
       open={!!target}
       onClose={onClose}
       title={`Invite ${target?.name ?? ''}`}
-      intro={<>Send this to {target?.email}. When they open the link and create their account with that email, they join your studio.</>}
+      intro={
+        code === null ? (
+          <>{target?.email} has already joined, or their invite is no longer open. Remove them and add them again for a fresh link.</>
+        ) : (
+          <>Send this only to {target?.email}. The link is their personal key: when they open it and create their account with that email, they join your studio.</>
+        )
+      }
       subject="Join our studio on Designly"
-      body={target ? inviteMessage(target.name, target.email) : ''}
+      body={target && code ? inviteMessage(target.name, target.email, code) : code === undefined ? 'Preparing the invite link…' : ''}
       to={target?.email}
     />
   )

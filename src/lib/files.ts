@@ -50,7 +50,8 @@ export async function uploadProjectFile(opts: { projectId: string; file: File; c
 
 /** A short-lived link to view or download a file. */
 export async function fileUrl(f: ProjectFile, opts: { download?: boolean; expiresIn?: number } = {}) {
-  if (f.dataUrl) return f.dataUrl
+  // Only real file data, never a script or web page someone slipped into a shared record.
+  if (f.dataUrl) return /^data:(?!text\/html)[\w.+-]+\/[\w.+-]+[;,]/i.test(f.dataUrl) ? f.dataUrl : null
   if (!f.path || !supabase) return null
   const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(f.path, opts.expiresIn ?? 3600, opts.download ? { download: f.name } : undefined)
   if (error) throw error

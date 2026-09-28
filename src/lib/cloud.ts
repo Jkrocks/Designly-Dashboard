@@ -105,11 +105,39 @@ export async function signOut() {
   await supabase?.auth.signOut()
 }
 
+/** The secret from a share-invite link (?invite=<email>&code=<code>). Kept for this tab until it is used. */
+const INVITE_CODE = 'df:invite-code'
+function inviteCode() {
+  const fromUrl = new URLSearchParams(location.search).get('code')
+  try {
+    if (fromUrl) sessionStorage.setItem(INVITE_CODE, fromUrl)
+    return fromUrl ?? sessionStorage.getItem(INVITE_CODE)
+  } catch {
+    return fromUrl
+  }
+}
+function forgetInviteCode() {
+  try {
+    sessionStorage.removeItem(INVITE_CODE)
+  } catch {
+    /* nothing stored */
+  }
+  const u = new URL(location.href)
+  if (u.searchParams.has('code') || u.searchParams.has('invite')) {
+    u.searchParams.delete('code')
+    u.searchParams.delete('invite')
+    history.replaceState(null, '', u)
+  }
+}
+
 async function afterSignIn() {
   const c = useCloud.getState()
   c.set({ loading: true, error: null })
   try {
-    await supabase!.rpc('claim_invites')
+    const code = inviteCode()
+    const { error: claimError } = await supabase!.rpc('claim_invites', code && /^[0-9a-f-]{36}$/i.test(code) ? { code } : {})
+    if (claimError) throw claimError
+    if (code) forgetInviteCode()
     const list = await listWorkspaces()
     c.set({ workspaces: list })
     const last = readLast()
@@ -123,12 +151,10 @@ async function afterSignIn() {
 }
 
 async function listWorkspaces(): Promise<Workspace[]> {
-  const email = useCloud.getState().session?.user.email?.toLowerCase() ?? ''
   const uid = useCloud.getState().session?.user.id
-  const { data, error } = await supabase!.from('workspace_members').select('role, email, user_id, workspaces(id, name)')
+  const { data, error } = await supabase!.from('workspace_members').select('role, email, user_id, workspaces(id, name)').eq('user_id', uid!)
   if (error) throw error
   return (data ?? [])
-    .filter((r) => r.user_id === uid || r.email?.toLowerCase() === email)
     .map((r) => {
       const ws = r.workspaces as unknown as { id: string; name: string }
       return { id: ws.id, name: ws.name, role: r.role as Role }
@@ -255,7 +281,8 @@ export async function inviteMember(email: string, role: Role) {
 }
 /**
  * Emails the person a one-click sign-in link. Supabase creates their account if needed, and
- * claim_invites() drops them straight into the studio. Works without a server or secret key.
+ * claim_invites() drops them straight into the studio, because opening the link proves they own
+ * the address. Works without a server or secret key.
  */
 export async function sendInviteEmail(email: string) {
   const { error } = await supabase!.auth.signInWithOtp({
@@ -414,12 +441,24 @@ export function messageOf(e: unknown) {
   return 'Something went wrong. Check your connection and try again.'
 }
 
-/** A link to this site that opens the sign-up screen with the invitee's email filled in. */
-export function inviteLink(email: string) {
-  return `${location.origin}${location.pathname}?invite=${encodeURIComponent(email.toLowerCase())}`
+/** The invite's secret code. Only owners and admins can read it, and only while the invite is unclaimed. */
+export async function fetchInviteCode(email: string) {
+  const ws = useCloud.getState().workspace
+  if (!ws) return null
+  const { data, error } = await supabase!.rpc('invite_code', { ws: ws.id, invitee: email.toLowerCase() })
+  if (error) throw error
+  return (data as string | null) ?? null
 }
 
-export function inviteMessage(name: string, email: string) {
+/**
+ * A link to this site that opens the sign-up screen with the invitee's email filled in. The code
+ * is what lets them in: without it, someone signing up with the same email gets nothing.
+ */
+export function inviteLink(email: string, code: string) {
+  return `${location.origin}${location.pathname}?invite=${encodeURIComponent(email.toLowerCase())}&code=${encodeURIComponent(code)}`
+}
+
+export function inviteMessage(name: string, email: string, code: string) {
   const studio = useCloud.getState().workspace?.name ?? 'our studio'
-  return `Hi ${name.split(' ')[0]}, you're invited to join ${studio} on Designly. Open this link and create your account with ${email.toLowerCase()}:\n${inviteLink(email)}`
+  return `Hi ${name.split(' ')[0]}, you're invited to join ${studio} on Designly. Open this link and create your account with ${email.toLowerCase()}. Please don't forward it, it's your personal invite:\n${inviteLink(email, code)}`
 }
