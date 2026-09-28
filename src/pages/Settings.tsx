@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { ArrowDown, ArrowUp, Monitor, Moon, Plus, RotateCcw, Sun, Trash2, UserPlus } from 'lucide-react'
+import { ArrowDown, ArrowUp, Mail, Monitor, Moon, Plus, RotateCcw, Sun, Trash2, UserPlus } from 'lucide-react'
 import { useStore, useUI } from '../lib/store'
 import { ROLE_INFO, useCan, useCurrentUser } from '../lib/selectors'
 import type { Role, StatusKind } from '../lib/types'
 import { cn } from '../lib/utils'
-import { cloudEnabled, inviteMember, memberIdFor, messageOf, openWorkspace, removeMemberAccess, setMemberRole, signOut, useCloud } from '../lib/cloud'
+import { cloudEnabled, sendInviteEmail, inviteMember, memberIdFor, messageOf, openWorkspace, removeMemberAccess, setMemberRole, signOut, useCloud } from '../lib/cloud'
 import { Avatar, Button, Card, CardHeader, Field, IconButton, inputCls, Modal, PageHeader, Segmented } from '../components/ui'
 
 const KIND_LABEL: Record<StatusKind, string> = {
@@ -233,6 +233,16 @@ function Team() {
                   </option>
                 ))}
               </select>
+              {manage && cloudEnabled && m.email && m.id !== me.id && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon={<Mail size={14} />}
+                  onClick={() => sendInviteEmail(m.email!).then(() => notify(`Invite sent to ${m.email}`), (err) => notify(messageOf(err)))}
+                >
+                  Send invite
+                </Button>
+              )}
               {manage && m.role !== 'Owner' && m.id !== me.id && (
                 <IconButton label={`Remove ${m.name}`} onClick={() => {
                   s.removeMember(m.id)
@@ -279,10 +289,16 @@ function Team() {
                     return
                   }
                 }
+                const invited = draft.name.trim()
                 s.addMember({ ...draft, id: email ? memberIdFor(email) : undefined, email: email || undefined, name: draft.name.trim(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, skills: [], specializations: [], bio: '', hue: Math.floor(Math.random() * 360), weeklyCapacity: 40 })
                 setInvite(false)
                 setDraft({ name: '', email: '', title: '', role: 'Designer', location: '' })
-                notify(cloudEnabled ? `${draft.name.trim()} can now sign in with ${email}` : `${draft.name.trim()} added to the team`)
+                if (cloudEnabled) {
+                  sendInviteEmail(email).then(
+                    () => notify(`Invite sent to ${email}`),
+                    (err) => notify(`${invited} was added, but the email didn’t send: ${messageOf(err)}`),
+                  )
+                } else notify(`${invited} added to the team`)
               }}
             >
               Add to team
@@ -294,7 +310,7 @@ function Team() {
           <Field label="Name" className="sm:col-span-2">
             <input id="inv-name" className={inputCls} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
           </Field>
-          <Field label="Email" hint={cloudEnabled ? 'They sign in with this address to join your studio.' : undefined} className="sm:col-span-2">
+          <Field label="Email" hint={cloudEnabled ? 'We email them a sign-in link. They land straight in your studio.' : undefined} className="sm:col-span-2">
             <input id="inv-email" type="email" className={inputCls} value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} placeholder="name@studio.com" />
           </Field>
           <Field label="Title">

@@ -253,6 +253,21 @@ export async function inviteMember(email: string, role: Role) {
   const { error } = await supabase!.from('workspace_members').upsert({ workspace_id: ws.id, email: email.toLowerCase(), role })
   if (error) throw error
 }
+/**
+ * Emails the person a one-click sign-in link. Supabase creates their account if needed, and
+ * claim_invites() drops them straight into the studio. Works without a server or secret key.
+ */
+export async function sendInviteEmail(email: string) {
+  const { error } = await supabase!.auth.signInWithOtp({
+    email: email.toLowerCase(),
+    options: { shouldCreateUser: true, emailRedirectTo: `${location.origin}${location.pathname}` },
+  })
+  if (error) {
+    if (/rate limit/i.test(error.message)) throw new Error('Supabase’s built-in email only sends a few messages an hour. Wait a bit and resend, or connect your own email service in Supabase.')
+    throw error
+  }
+}
+
 export async function setMemberRole(email: string, role: Role) {
   const ws = useCloud.getState().workspace
   if (!ws) return
