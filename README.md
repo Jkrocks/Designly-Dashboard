@@ -35,12 +35,16 @@ in the browser, exactly like the demo.
 ### How the data is stored
 
 - `workspaces`: one row per studio.
-- `workspace_members`: who can open a studio and their role. Inviting someone adds their email here, and they
-  join by signing in with that email.
+- `workspace_members`: who can open a studio and their role. Inviting someone adds their email here with a secret
+  invite code. They join by opening their personal Share invite link (which carries the code), or by signing in
+  from the Email invite link. Signing up with a matching email alone is not enough, because email confirmation
+  may be off.
 - `records`: every project, task, client, time entry, status and profile is one JSON row, so two people editing
   different things never overwrite each other. Changes are pushed within half a second and arrive on teammates'
   screens through Supabase Realtime. If the connection drops, edits are kept and retried.
 - Roles are enforced by the database: Viewers can read only, and people outside a studio see nothing.
+- Signed-out visitors can't read any table. Only a teammate's role can be edited, never whose row it is.
+- The built page carries a Content Security Policy that only allows its own scripts and its own Supabase project.
 
 ## Stack
 

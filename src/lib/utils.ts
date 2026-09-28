@@ -113,3 +113,15 @@ export function safeStorage(): Storage | undefined {
     return undefined
   }
 }
+
+/**
+ * Links typed by teammates open only as web or email links. Anything else (javascript:, data:, …)
+ * is dropped, and a bare "figma.com/…" becomes https.
+ */
+export function safeHref(url: string | null | undefined) {
+  const v = (url ?? '').trim()
+  if (!v) return undefined
+  if (/^(https?:\/\/|mailto:)/i.test(v)) return v
+  if (/^[a-z][a-z0-9+.-]*:/i.test(v)) return undefined
+  return `https://${v.replace(/^\/+/, '')}`
+}

@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { ArrowLeft, CalendarDays, CheckCircle2, Columns3, ExternalLink, List, Pencil, Plus, Send, Trash2 } from 'lucide-react'
 import { useStore, useUI } from '../lib/store'
 import { entryMs, isClosedKind, kindOf, projectProgress, useCan, useLookups } from '../lib/selectors'
-import { cn, fmtDate, fmtHours, parseDay } from '../lib/utils'
+import { cn, fmtDate, fmtHours, parseDay, safeHref } from '../lib/utils'
 import { Avatar, Button, Card, CardHeader, ClientMark, EmptyState, inputCls, PriorityTag, Ring, Segmented, Tag } from '../components/ui'
 import { DueBadge, TaskRow, TimerButton } from '../components/items'
 import { Kanban } from '../components/Kanban'
@@ -276,7 +276,7 @@ export default function ProjectDetail({ id }: { id: string }) {
                 <ul className="flex flex-col gap-1.5">
                   {p.links.map((l) => (
                     <li key={l.id}>
-                      <a href={l.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm hover:underline">
+                      <a href={safeHref(l.url)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm hover:underline">
                         <ExternalLink size={13} className="text-ink-3" /> {l.label || l.url}
                       </a>
                     </li>
@@ -369,7 +369,7 @@ export default function ProjectDetail({ id }: { id: string }) {
                 <ul className="flex flex-col gap-2">
                   {p.links.map((l) => (
                     <li key={l.id}>
-                      <a href={l.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-2xl border border-line bg-surface-2 px-3 py-2.5 text-sm hover:border-line-strong">
+                      <a href={safeHref(l.url)} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-2xl border border-line bg-surface-2 px-3 py-2.5 text-sm hover:border-line-strong">
                         <ExternalLink size={14} className="text-ink-3" />
                         <span className="flex-1 truncate">{l.label || l.url}</span>
                       </a>
