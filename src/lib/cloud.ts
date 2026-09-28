@@ -413,3 +413,13 @@ export function messageOf(e: unknown) {
   if (e && typeof e === 'object' && 'message' in e) return String((e as { message: string }).message)
   return 'Something went wrong. Check your connection and try again.'
 }
+
+/** A link to this site that opens the sign-up screen with the invitee's email filled in. */
+export function inviteLink(email: string) {
+  return `${location.origin}${location.pathname}?invite=${encodeURIComponent(email.toLowerCase())}`
+}
+
+export function inviteMessage(name: string, email: string) {
+  const studio = useCloud.getState().workspace?.name ?? 'our studio'
+  return `Hi ${name.split(' ')[0]}, you're invited to join ${studio} on DesignFlow. Open this link and create your account with ${email.toLowerCase()}:\n${inviteLink(email)}`
+}

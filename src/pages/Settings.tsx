@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { ArrowDown, ArrowUp, Mail, Monitor, Moon, Plus, RotateCcw, Sun, Trash2, UserPlus } from 'lucide-react'
+import { ArrowDown, ArrowUp, Copy, Link2, Mail, MessageCircle, Monitor, Moon, Plus, RotateCcw, Sun, Trash2, UserPlus } from 'lucide-react'
 import { useStore, useUI } from '../lib/store'
 import { ROLE_INFO, useCan, useCurrentUser } from '../lib/selectors'
 import type { Role, StatusKind } from '../lib/types'
 import { cn } from '../lib/utils'
-import { cloudEnabled, sendInviteEmail, inviteMember, memberIdFor, messageOf, openWorkspace, removeMemberAccess, setMemberRole, signOut, useCloud } from '../lib/cloud'
+import { cloudEnabled, sendInviteEmail, inviteMember, inviteMessage, memberIdFor, messageOf, openWorkspace, removeMemberAccess, setMemberRole, signOut, useCloud } from '../lib/cloud'
 import { Avatar, Button, Card, CardHeader, Field, IconButton, inputCls, Modal, PageHeader, Segmented } from '../components/ui'
 
 const KIND_LABEL: Record<StatusKind, string> = {
@@ -198,6 +198,7 @@ function Team() {
   const navigate = useUI((u) => u.navigate)
   const notify = useUI((u) => u.notify)
   const [invite, setInvite] = useState(false)
+  const [share, setShare] = useState<{ name: string; email: string } | null>(null)
   const [draft, setDraft] = useState({ name: '', email: '', title: '', role: 'Designer' as Role, location: '' })
   const manage = can('manageTeam')
   return (
@@ -240,7 +241,12 @@ function Team() {
                   icon={<Mail size={14} />}
                   onClick={() => sendInviteEmail(m.email!).then(() => notify(`Invite sent to ${m.email}`), (err) => notify(messageOf(err)))}
                 >
-                  Send invite
+                  Email
+                </Button>
+              )}
+              {manage && cloudEnabled && m.email && m.id !== me.id && (
+                <Button size="sm" variant="secondary" icon={<Link2 size={14} />} onClick={() => setShare({ name: m.name, email: m.email! })}>
+                  Share invite
                 </Button>
               )}
               {manage && m.role !== 'Owner' && m.id !== me.id && (
@@ -267,6 +273,7 @@ function Team() {
           ))}
         </dl>
       </Card>
+      <ShareInvite target={share} onClose={() => setShare(null)} />
       <Modal
         open={invite}
         onClose={() => setInvite(false)}
@@ -294,10 +301,8 @@ function Team() {
                 setInvite(false)
                 setDraft({ name: '', email: '', title: '', role: 'Designer', location: '' })
                 if (cloudEnabled) {
-                  sendInviteEmail(email).then(
-                    () => notify(`Invite sent to ${email}`),
-                    (err) => notify(`${invited} was added, but the email didn’t send: ${messageOf(err)}`),
-                  )
+                  setShare({ name: invited, email })
+                  sendInviteEmail(email).catch(() => {})
                 } else notify(`${invited} added to the team`)
               }}
             >
@@ -310,7 +315,7 @@ function Team() {
           <Field label="Name" className="sm:col-span-2">
             <input id="inv-name" className={inputCls} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
           </Field>
-          <Field label="Email" hint={cloudEnabled ? 'We email them a sign-in link. They land straight in your studio.' : undefined} className="sm:col-span-2">
+          <Field label="Email" hint={cloudEnabled ? 'Next you’ll get an invite link to send them on WhatsApp, email or anywhere.' : undefined} className="sm:col-span-2">
             <input id="inv-email" type="email" className={inputCls} value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} placeholder="name@studio.com" />
           </Field>
           <Field label="Title">
@@ -354,5 +359,41 @@ export default function Settings({ tab = 'general' }: { tab?: string }) {
       {t === 'workflow' && <Workflow />}
       {t === 'team' && <Team />}
     </div>
+  )
+}
+
+function ShareInvite({ target, onClose }: { target: { name: string; email: string } | null; onClose: () => void }) {
+  const notify = useUI((u) => u.notify)
+  const text = target ? inviteMessage(target.name, target.email) : ''
+  const copy = () =>
+    navigator.clipboard.writeText(text).then(
+      () => notify('Invite copied. Paste it anywhere.'),
+      () => notify('Couldn’t copy. Select the text and copy it yourself.'),
+    )
+  return (
+    <Modal
+      open={!!target}
+      onClose={onClose}
+      title={`Invite ${target?.name ?? ''}`}
+      footer={
+        <Button variant="ghost" onClick={onClose}>
+          Done
+        </Button>
+      }
+    >
+      <p className="mb-3 text-sm text-ink-3">Send this to {target?.email}. When they open the link and create their account with that email, they join your studio.</p>
+      <textarea id="invite-text" readOnly value={text} rows={5} className={cn(inputCls, 'h-auto py-3 text-[13px] leading-relaxed')} onFocus={(e) => e.currentTarget.select()} />
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button variant="accent" icon={<Copy size={15} />} onClick={copy}>
+          Copy invite
+        </Button>
+        <a className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-surface-2 px-4 text-sm hover:bg-surface-3" href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer">
+          <MessageCircle size={15} /> WhatsApp
+        </a>
+        <a className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-surface-2 px-4 text-sm hover:bg-surface-3" href={`mailto:${target?.email ?? ''}?subject=${encodeURIComponent('Join our studio on DesignFlow')}&body=${encodeURIComponent(text)}`}>
+          <Mail size={15} /> Email from my inbox
+        </a>
+      </div>
+    </Modal>
   )
 }

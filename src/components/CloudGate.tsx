@@ -33,9 +33,11 @@ function Loading({ text }: { text: string }) {
   )
 }
 
+const invited = new URLSearchParams(location.search).get('invite') ?? ''
+
 function SignIn() {
-  const [mode, setMode] = useState<'in' | 'up' | 'link'>('in')
-  const [email, setEmail] = useState('')
+  const [mode, setMode] = useState<'in' | 'up' | 'link'>(invited ? 'up' : 'in')
+  const [email, setEmail] = useState(invited)
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ tone: 'good' | 'bad'; text: string } | null>(null)
@@ -60,7 +62,9 @@ function SignIn() {
   return (
     <Screen>
       <h1 className="text-[26px] leading-tight font-semibold tracking-tight">Every project, every deadline, in one place.</h1>
-      <p className="mt-2 mb-6 text-sm text-ink-3">Sign in to reach your studio from any device and work with your team.</p>
+      <p className="mt-2 mb-6 text-sm text-ink-3">
+        {invited ? 'You’ve been invited to a studio. Create your account with this email and you’ll land straight in it.' : 'Sign in to reach your studio from any device and work with your team.'}
+      </p>
       <Segmented
         label="Sign-in method"
         value={mode}
