@@ -353,8 +353,20 @@ async function prepare(blob: Blob, file: ProjectFile | null): Promise<Omit<Artwo
   return { data: canvas.toDataURL('image/jpeg', 0.9), w: canvas.width, h: canvas.height, blob }
 }
 
+/** Decodes a data URL without fetch, which the site's security policy doesn't allow for data: URLs. */
+function dataUrlToBlob(url: string) {
+  const [head, body = ''] = url.split(',', 2)
+  const mime = /data:([^;,]+)/.exec(head!)?.[1] ?? 'application/octet-stream'
+  if (!/;base64/.test(head!)) return new Blob([decodeURIComponent(body)], { type: mime })
+  const bin = atob(body)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return new Blob([bytes], { type: mime })
+}
+
 async function fetchBlob(f: ProjectFile) {
   const url = await fileUrl(f)
+  if (url?.startsWith('data:')) return dataUrlToBlob(url)
   if (!url) throw new Error(`${f.name} has no stored copy.`)
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Couldn’t load ${f.name}.`)
